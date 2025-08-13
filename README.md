@@ -1,5 +1,4 @@
 # Sistema de Digitação e Gerenciamento de Trabalhos Acadêmicos
-Sistema de digitação e gerenciamento de trabalhos acadêmicos
 
 ## Visão Geral
 

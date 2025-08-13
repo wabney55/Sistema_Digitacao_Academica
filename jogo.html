@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div id="game-container">
+<!-- Tela de seleção de dificuldade -->
+<div id="difficulty-screen" class="card">
+    <h2 class="game-header">Selecione a Dificuldade</h2>
+    <div class="difficulty-grid">
+        <div class="difficulty-card difficulty-1" data-level="1" onclick="selectDifficulty(1)">
+            <div class="difficulty-content">
+                <h3>Iniciante</h3>
+                <p>Frases curtas e simples</p>
+                <div class="difficulty-icon">👶</div>
+            </div>
+        </div>
+        
+        <div class="difficulty-card difficulty-2" data-level="2" onclick="selectDifficulty(2)">
+            <div class="difficulty-content">
+                <h3>Intermediário</h3>
+                <p>Frases médias com pontuação</p>
+                <div class="difficulty-icon">👍</div>
+            </div>
+        </div>
+        
+        <div class="difficulty-card difficulty-3" data-level="3" onclick="selectDifficulty(3)">
+            <div class="difficulty-content">
+                <h3>Avançado</h3>
+                <p>Frases longas e complexas</p>
+                <div class="difficulty-icon">💪</div>
+            </div>
+        </div>
+        
+        <div class="difficulty-card difficulty-4" data-level="4" onclick="selectDifficulty(4)">
+            <div class="difficulty-content">
+                <h3>Expert</h3>
+                <p>Textos técnicos e caracteres especiais</p>
+                <div class="difficulty-icon">🔥</div>
+            </div>
+        </div>
+    </div>
+</div>
+        <!-- Tela do jogo (inicialmente oculta) -->
+        <div id="game-screen" class="card" style="display: none;">
+            <div class="game-header">
+                <div class="game-info">
+                    <span class="difficulty-badge" id="current-difficulty-badge">Iniciante</span>
+                    <span class="level-badge">Nível <span id="current-level">1</span></span>
+                    <span class="timer-badge">⏱️ <span id="timer">60</span>s</span>
+                </div>
+            </div>
+
+            <div id="phrase-container">
+                <div id="typing-display" class="typing-display">
+                    <span id="phrase-text">Preparando o desafio...</span>
+                </div>
+            </div>
+            
+            <div class="input-container">
+                <textarea id="input" rows="3" placeholder="Comece a digitar aqui..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="wpm">0</div>
+                    <div class="stat-label">WPM</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="accuracy">100</div>
+                    <div class="stat-label">Precisão</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="errors">0</div>
+                    <div class="stat-label">Erros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">Pontos</div>
+                </div>
+            </div>
+            
+            <div class="game-controls">
+                <button id="restart-game" class="btn btn-secondary">Reiniciar Jogo</button>
+                <button id="change-difficulty" class="btn btn-primary">Escolher Dificuldade</button>
+            </div>
+        </div>
+
+        <!-- Tela de resultados (inicialmente oculta) -->
+        <div id="result-screen" class="card" style="display: none;">
+            <h2 class="game-header">Resultado Final</h2>
+            <div class="result-content">
+                <div class="result-stats">
+                    <div class="result-stat">
+                        <span class="stat-label">Dificuldade:</span>
+                        <span class="stat-value" id="result-difficulty">Iniciante</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="stat-label">Nível alcançado:</span>
+                        <span class="stat-value" id="result-level">1</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="stat-label">Melhor WPM:</span>
+                        <span class="stat-value" id="result-wpm">0</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="stat-label">Precisão média:</span>
+                        <span class="stat-value" id="result-accuracy">100%</span>
+                    </div>
+                    <div class="result-stat">
+                        <span class="stat-label">Pontuação total:</span>
+                        <span class="stat-value" id="result-score">0</span>
+                    </div>
+                </div>
+                <button id="restart-btn" class="btn btn-primary">Jogar Novamente</button>
+                <a href="{{ url_for('perfil') }}" class="btn btn-secondary" style="margin-top: 1rem;">Ver Meu Progresso</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        // Configurações do jogo
+        const socket = io();
+        let gameState = {
+            active: false,
+            difficulty: 1,
+            level: 1,
+            errors: 0,
+            score: 0,
+            startTime: null,
+            currentPhrase: '',
+            timerInterval: null,
+            timeLeft: 60,
+            stats: {
+                wpm: 0,
+                accuracy: 100,
+                bestWpm: 0,
+                totalCorrect: 0,
+                totalChars: 0
+            }
+        };
+
+        // Configurações de dificuldade
+        const difficultySettings = {
+            1: { name: "Iniciante", color: "#2ecc71", time: 90, wpmMultiplier: 1 },
+            2: { name: "Intermediário", color: "#3498db", time: 60, wpmMultiplier: 1.5 },
+            3: { name: "Avançado", color: "#f39c12", time: 45, wpmMultiplier: 2 },
+            4: { name: "Expert", color: "#e74c3c", time: 30, wpmMultiplier: 3 }
+        };
+
+        // Iniciar temporizador
+        function startTimer() {
+            const difficulty = difficultySettings[gameState.difficulty];
+            gameState.timeLeft = difficulty.time;
+            updateTimerDisplay();
+            
+            clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                gameState.timeLeft--;
+                updateTimerDisplay();
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        function updateTimerDisplay() {
+            document.getElementById('timer').textContent = gameState.timeLeft;
+            
+            // Mudar cor quando o tempo estiver acabando
+            if (gameState.timeLeft <= 10) {
+                document.getElementById('timer').style.color = '#e74c3c';
+                document.getElementById('timer').classList.add('pulse');
+            } else {
+                document.getElementById('timer').style.color = '';
+                document.getElementById('timer').classList.remove('pulse');
+            }
+        }
+
+function startGame() {
+    gameState.active = true;
+    gameState.errors = 0;
+    gameState.score = 0;
+    gameState.stats = {
+        wpm: 0,
+        accuracy: 100,
+        bestWpm: 0,
+        totalCorrect: 0,
+        totalChars: 0
+    };
+
+    // Mostrar tela do jogo
+    document.getElementById('difficulty-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'block';
+    document.getElementById('result-screen').style.display = 'none';
+    
+    // Configurar UI
+    const difficulty = difficultySettings[gameState.difficulty];
+    document.getElementById('current-difficulty-badge').textContent = difficulty.name;
+    document.getElementById('current-difficulty-badge').style.backgroundColor = difficulty.color;
+    
+    // Resetar estatísticas
+    document.getElementById('wpm').textContent = '0';
+    document.getElementById('accuracy').textContent = '100';
+    document.getElementById('errors').textContent = '0';
+    document.getElementById('score').textContent = '0';
+    document.getElementById('current-level').textContent = '1';
+    
+    // Iniciar temporizador
+    startTimer();
+    
+    // Carregar primeira frase
+    loadPhrase();
+}
+        // Carregar frase
+        function loadPhrase() {
+            document.getElementById('phrase-text').textContent = "Carregando...";
+            document.getElementById('input').value = '';
+            document.getElementById('progress-fill').style.width = '0%';
+            
+            socket.emit('get_phrase', { 
+                difficulty: gameState.difficulty,
+                level: gameState.level 
+            });
+        }
+
+        // Receber nova frase do servidor
+        socket.on('new_phrase', (data) => {
+            gameState.currentPhrase = data.phrase;
+            gameState.startTime = new Date();
+            
+            // Exibir frase com caracteres individuais
+            const phraseElement = document.getElementById('phrase-text');
+            phraseElement.innerHTML = '';
+            
+            gameState.currentPhrase.split('').forEach(char => {
+                const span = document.createElement('span');
+                span.className = 'character';
+                span.textContent = char;
+                phraseElement.appendChild(span);
+            });
+            
+            // Preparar input
+            const input = document.getElementById('input');
+            input.value = '';
+            input.focus();
+            
+            // Atualizar nível na UI
+            document.getElementById('current-level').textContent = gameState.level;
+        });
+
+        // Verificar digitação em tempo real
+        document.getElementById('input').addEventListener('input', function(e) {
+            if (!gameState.active) return;
+            
+            const inputText = this.value;
+            const phraseText = gameState.currentPhrase;
+            const characters = document.querySelectorAll('#phrase-text .character');
+            
+            // Resetar todas as classes
+            characters.forEach(char => {
+                char.className = 'character';
+            });
+            
+            let correctChars = 0;
+            let errors = 0;
+            for (let i = 0; i < inputText.length; i++) {
+                if (i < phraseText.length) {
+                    if (inputText[i] === phraseText[i]) {
+                        characters[i].classList.add('correct');
+                        correctChars++;
+                    } else {
+                        characters[i].classList.add('incorrect');
+                        errors++;
+                    }
+                }
+            }
+            
+            // Atualizar contagem de erros
+            gameState.errors = errors;
+            document.getElementById('errors').textContent = errors;
+            
+            // Atualizar barra de progresso
+            const progress = (inputText.length / phraseText.length) * 100;
+            document.getElementById('progress-fill').style.width = `${Math.min(progress, 100)}%`;
+            
+            // Calcular estatísticas
+            const currentTime = new Date();
+            const seconds = (currentTime - gameState.startTime) / 1000;
+            const words = inputText.trim().split(/\s+/).length;
+            const minutes = seconds / 60;
+            const wpm = minutes > 0 ? (words / minutes) : 0;
+            
+            const accuracy = phraseText.length > 0 ? (correctChars / phraseText.length) * 100 : 100;
+            
+            // Atualizar estado e UI
+            gameState.stats.wpm = wpm;
+            gameState.stats.accuracy = accuracy;
+            
+            document.getElementById('wpm').textContent = Math.round(wpm);
+            document.getElementById('accuracy').textContent = accuracy.toFixed(1);
+            
+            // Verificar se completou a frase
+            if (inputText === phraseText) {
+                phraseComplete();
+            }
+        });
+
+        function phraseComplete() {
+            // Calcular pontos baseados na velocidade e precisão
+            const difficulty = difficultySettings[gameState.difficulty];
+            const speedPoints = Math.floor(gameState.stats.wpm * difficulty.wpmMultiplier);
+            const accuracyPoints = Math.floor(gameState.stats.accuracy);
+            const levelBonus = gameState.level * 10;
+            
+            const pointsEarned = speedPoints + accuracyPoints + levelBonus;
+            gameState.score += pointsEarned;
+            document.getElementById('score').textContent = gameState.score;
+            
+            // Mostrar feedback visual
+            const scoreElement = document.getElementById('score');
+            scoreElement.classList.add('score-pop');
+            setTimeout(() => {
+                scoreElement.classList.remove('score-pop');
+            }, 500);
+            
+            // Atualizar melhor WPM
+            if (gameState.stats.wpm > gameState.stats.bestWpm) {
+                gameState.stats.bestWpm = gameState.stats.wpm;
+            }
+            
+            // Avançar para o próximo nível
+            gameState.level++;
+            document.getElementById('current-level').textContent = gameState.level;
+            
+            // Carregar nova frase
+            loadPhrase();
+        }
+
+function endGame() {
+    gameState.active = false;
+    clearInterval(gameState.timerInterval);
+    
+    // Mostrar tela de resultados
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'block';
+    
+    // Preencher resultados
+    document.getElementById('result-difficulty').textContent = 
+        difficultySettings[gameState.difficulty].name;
+    document.getElementById('result-level').textContent = gameState.level;
+    document.getElementById('result-wpm').textContent = Math.round(gameState.stats.bestWpm);
+    document.getElementById('result-accuracy').textContent = 
+        gameState.stats.accuracy.toFixed(1) + '%';
+    document.getElementById('result-score').textContent = gameState.score;
+    
+    // Enviar resultados para o servidor via Socket.IO
+    socket.emit('save_game_results', {
+        difficulty: gameState.difficulty,
+        level: gameState.level,
+        wpm: gameState.stats.bestWpm,
+        accuracy: gameState.stats.accuracy,
+        errors: gameState.errors,
+        score: gameState.score,
+        time_played: difficultySettings[gameState.difficulty].time - gameState.timeLeft
+    });
+}
+// Atualize os event listeners para os botões
+document.getElementById('restart-game').addEventListener('click', function() {
+    if (gameState.active) {
+        // Reinicia o jogo com mesma dificuldade
+        gameState.level = 1;
+        gameState.score = 0;
+        gameState.errors = 0;
+        gameState.stats = {
+            wpm: 0,
+            accuracy: 100,
+            bestWpm: 0,
+            totalCorrect: 0,
+            totalChars: 0
+        };
+        startGame();
+    } else {
+        // Se o jogo não estava ativo, começa novo
+        startGame();
+    }
+});
+
+document.getElementById('change-difficulty').addEventListener('click', function() {
+    // Volta para tela de seleção de dificuldade
+    document.getElementById('difficulty-screen').style.display = 'block';
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'none';
+    gameState.active = false;
+    
+    // Reseta seleção de dificuldade
+    document.querySelectorAll('.difficulty-card').forEach(c => {
+        c.classList.remove('selected');
+    });
+});
+
+        // Event listeners para botões
+        document.getElementById('restart-game').addEventListener('click', function() {
+            if (gameState.active) {
+                startGame();
+            }
+        });
+        
+        document.getElementById('new-phrase').addEventListener('click', function() {
+            if (gameState.active) {
+                loadPhrase();
+            }
+        });
+        
+        document.getElementById('restart-btn').addEventListener('click', function() {
+            document.getElementById('difficulty-screen').style.display = 'block';
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            gameState.active = false;
+            
+            document.querySelectorAll('.difficulty-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+        });
+
+// Adicione esta função para selecionar dificuldade
+function selectDifficulty(level) {
+    gameState.difficulty = level;
+    
+    // Adiciona efeito visual de seleção
+    document.querySelectorAll('.difficulty-card').forEach(card => {
+        card.classList.remove('selected');
+        if (parseInt(card.getAttribute('data-level')) === level) {
+            card.classList.add('selected');
+        }
+    });
+    
+    // Inicia o jogo após pequeno delay
+    setTimeout(() => {
+        startGame();
+    }, 300);
+}
+
+// Remova o event listener antigo e substitua por:
+document.querySelectorAll('.difficulty-card').forEach(card => {
+    card.addEventListener('click', function() {
+        if (!gameState.active) {
+            const level = parseInt(this.getAttribute('data-level'));
+            selectDifficulty(level);
+        }
+    });
+});
+        // Permitir usar Tab no textarea sem sair dele
+        document.getElementById('input').addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                
+                // Insere tab no cursor
+                this.value = this.value.substring(0, start) + '\t' + this.value.substring(end);
+                
+                // Move o cursor
+                this.selectionStart = this.selectionEnd = start + 1;
+            }
+        });
+    </script>
+
+    <style>
+        /* Estilos específicos para o jogo */
+        .typing-display {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            min-height: 150px;
+            text-align: left;
+            border-left: 4px solid #4361ee;
+        }
+        
+        .character {
+            transition: all 0.1s ease;
+            position: relative;
+        }
+        
+        .character.correct {
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        .character.incorrect {
+            color: #e74c3c;
+            text-decoration: underline;
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #4361ee;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .timer-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background-color: #333;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .pulse {
+            animation: pulse 0.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        
+        .score-pop {
+            animation: pop 0.3s;
+        }
+        
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+    </style>
+{% endblock %}

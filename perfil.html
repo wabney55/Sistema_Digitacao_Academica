@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Seção de Informações do Usuário -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            {{ current_user.username[0].upper() }}
+        </div>
+        <div class="profile-info">
+            <h2>{{ current_user.username }}</h2>
+            <p class="user-role">Aluno</p>
+        </div>
+    </div>
+
+    <!-- Seção de Trabalhos -->
+    <div class="trabalhos-section">
+        <h3>Meus Trabalhos</h3>
+        
+        {% if equipes_com_trabalhos %}
+            <div class="trabalhos-list">
+                {% for item in equipes_com_trabalhos %}
+                <div class="trabalho-card">
+                    <div class="trabalho-header">
+                        <h4>{{ item.trabalho.titulo }}</h4>
+                        <span class="status-badge {{ 'entregue' if item.entrega else 'pendente' }}">
+                            {{ 'Entregue' if item.entrega else 'Pendente' }}
+                        </span>
+                    </div>
+                    
+                    <div class="trabalho-body">
+                        <p><strong>Descrição:</strong> {{ item.trabalho.descricao }}</p>
+                        <p><strong>Equipe:</strong> {{ item.equipe.nome }}</p>
+                        <p><strong>Membros:</strong> 
+                            {% for membro in item.equipe.membros %}
+                                {{ membro.username }}{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
+                        
+                        {% if item.trabalho.data_entrega %}
+                        <p><strong>Prazo:</strong> 
+                            <span class="prazo {{ 'atrasado' if item.trabalho.data_entrega < agora else 'no-prazo' }}">
+                                {{ item.trabalho.data_entrega.strftime('%d/%m/%Y %H:%M') }}
+                            </span>
+                        </p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="trabalho-actions">
+                        <a href="{{ url_for('entregas_aluno', trabalho_id=item.trabalho.id) }}" 
+                           class="btn btn-primary">
+                            {{ 'Ver Entrega' if item.entrega else 'Fazer Entrega' }}
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-trabalhos">
+                <p>Você não tem trabalhos atribuídos no momento.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Seção de Estatísticas (mantenha o existente) -->
+    <!-- ... -->
+</div>
+
+<style>
+    .trabalhos-section {
+        margin-bottom: 2rem;
+    }
+    
+    .trabalhos-list {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    .trabalho-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .trabalho-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .status-badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .status-badge.pendente {
+        background-color: #ffebee;
+        color: #e74c3c;
+    }
+    
+    .status-badge.entregue {
+        background-color: #e8f5e9;
+        color: #2ecc71;
+    }
+    
+    .prazo.atrasado {
+        color: #e74c3c;
+        font-weight: bold;
+    }
+    
+    .prazo.no-prazo {
+        color: #2ecc71;
+    }
+    
+    .trabalho-actions {
+        margin-top: 1rem;
+        text-align: right;
+    }
+    
+    .no-trabalhos {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 6px;
+        text-align: center;
+    }
+</style>
+{% endblock %}

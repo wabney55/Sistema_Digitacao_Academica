@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Avaliar Entrega</h2>
+    
+    <div class="card mb-3">
+        <div class="card-body">
+            <h4>Trabalho: {{ entrega.trabalho.titulo }}</h4>
+            <p>Equipe: {{ entrega.equipe.nome }}</p>
+            <p>Data da Entrega: {{ entrega.data_entrega.strftime('%d/%m/%Y %H:%M') }}</p>
+            {% if entrega.comentarios %}
+            <p><strong>Comentários do Aluno:</strong> {{ entrega.comentarios }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('download_file', file_id=entrega.arquivo.id) }}" class="btn btn-primary mb-3">
+        Baixar Arquivo
+    </a>
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="nota" class="form-label">Nota (0-10)</label>
+            <input type="number" class="form-control" id="nota" name="nota" min="0" max="10" step="0.1" required value="{{ entrega.nota if entrega.nota else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="feedback" class="form-label">Feedback</label>
+            <textarea class="form-control" id="feedback" name="feedback" rows="3">{{ entrega.feedback if entrega.feedback else '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Avaliação</button>
+        <a href="{{ url_for('gerenciar_entregas', trabalho_id=entrega.trabalho_id) }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

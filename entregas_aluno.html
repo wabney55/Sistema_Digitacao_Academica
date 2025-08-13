@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3>{{ trabalho.titulo }}</h3>
+        </div>
+        <div class="card-body">
+            <h5>Descrição do Trabalho:</h5>
+            <p>{{ trabalho.descricao }}</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Equipe:</strong> {{ equipe.nome }}</p>
+                    <p><strong>Membros:</strong> 
+                        {% for membro in equipe.membros %}
+                            {{ membro.username }}{% if not loop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    {% if trabalho.data_entrega %}
+                        <p><strong>Prazo de Entrega:</strong> 
+                            <span class="badge bg-{% if trabalho.data_entrega > agora %}success{% else %}danger{% endif %}">
+                                {{ trabalho.data_entrega.strftime('%d/%m/%Y %H:%M') }}
+                            </span>
+                        </p>
+                    {% else %}
+                        <p><strong>Prazo de Entrega:</strong> Não definido</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4>Nova Entrega</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="arquivo" class="form-label">Arquivo</label>
+                    <input class="form-control" type="file" id="arquivo" name="arquivo" required>
+                    <div class="form-text">Formatos permitidos: PDF, DOCX, XLSX, PPTX, ZIP, RAR</div>
+                </div>
+                <div class="mb-3">
+                    <label for="comentarios" class="form-label">Comentários (opcional)</label>
+                    <textarea class="form-control" id="comentarios" name="comentarios" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar Entrega</button>
+            </form>
+        </div>
+    </div>
+
+    {% if entregas %}
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4>Histórico de Entregas</h4>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                {% for entrega in entregas %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5>Entrega em {{ entrega.data_entrega.strftime('%d/%m/%Y %H:%M') }}</h5>
+                            {% if entrega.comentarios %}
+                            <p class="mb-1"><strong>Comentários:</strong> {{ entrega.comentarios }}</p>
+                            {% endif %}
+                            {% if entrega.nota is not none %}
+                            <p class="mb-1"><strong>Nota:</strong> {{ "%.1f"|format(entrega.nota) }}</p>
+                            {% endif %}
+                            {% if entrega.feedback %}
+                            <p class="mb-1"><strong>Feedback:</strong> {{ entrega.feedback }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <a href="{{ url_for('download_file', file_id=entrega.arquivo.id) }}" 
+                               class="btn btn-sm btn-success">
+                                <i class="fas fa-download"></i> Baixar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

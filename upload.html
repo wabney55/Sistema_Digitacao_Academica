@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Enviar Arquivo ou Link</h2>
+    <p>Compartilhe arquivos ou links com seus alunos.</p>
+    
+    <form method="POST" enctype="multipart/form-data" style="margin-top: 2rem;">
+        <div class="form-group">
+            <label>Selecione o arquivo:</label>
+            <input type="file" name="file" class="form-control">
+            <p class="text-muted" style="margin-top: 0.5rem;">OU</p>
+            <label>Cole um link:</label>
+            <input type="url" name="link" class="form-control" placeholder="https://exemplo.com">
+        </div>
+        
+        <button type="submit" class="btn">Enviar</button>
+    </form>
+{% endblock %}

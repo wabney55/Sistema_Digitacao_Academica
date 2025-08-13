@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Arquivos e Links Compartilhados</h2>
+    
+    {% if current_user.role == 'professor' %}
+        <div style="margin-bottom: 1.5rem;">
+            <a href="{{ url_for('upload_file') }}" class="btn">Adicionar Arquivo/Link</a>
+        </div>
+    {% endif %}
+    
+    {% if files %}
+        <div class="table-container">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th>Tipo</th>
+                        <th>Data</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                        <tr>
+                            <td>
+                                {% if file.is_link %}
+                                    <i class="fas fa-link"></i> {{ file.filename }}
+                                {% else %}
+                                    <i class="fas fa-file"></i> {{ file.filename }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if file.is_link %}
+                                    <span class="badge badge-link">Link</span>
+                                {% else %}
+                                    <span class="badge badge-file">Arquivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ file.upload_date.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if file.is_link %}
+                                    <a href="{{ file.path }}" target="_blank" class="btn btn-sm btn-primary">Abrir</a>
+                                {% else %}
+                                    <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn btn-sm btn-primary">Baixar</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Nenhum arquivo ou link disponível no momento.</p>
+    {% endif %}
+{% endblock %}

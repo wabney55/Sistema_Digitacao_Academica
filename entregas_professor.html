@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Entregas - {{ trabalho.titulo }}</h2>
+    
+    <div class="accordion mt-4" id="entregasAccordion">
+        {% for equipe in equipes %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ equipe.id }}">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ equipe.id }}" aria-expanded="true" aria-controls="collapse{{ equipe.id }}">
+                    {{ equipe.nome }}
+                </button>
+            </h2>
+            <div id="collapse{{ equipe.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ equipe.id }}" data-bs-parent="#entregasAccordion">
+                <div class="accordion-body">
+                    <div class="list-group">
+                        {% for entrega in entregas if entrega.equipe_id == equipe.id %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <h6>Entrega em {{ entrega.data_entrega.strftime('%d/%m/%Y %H:%M') }}</h6>
+                                <div>
+                                    <a href="{{ url_for('download_file', file_id=entrega.arquivo.id) }}" class="btn btn-sm btn-success">
+                                        Download
+                                    </a>
+                                    <a href="{{ url_for('avaliar_entrega', entrega_id=entrega.id) }}" class="btn btn-sm btn-primary">
+                                        Avaliar
+                                    </a>
+                                </div>
+                            </div>
+                            {% if entrega.comentarios %}
+                            <p class="mb-1">{{ entrega.comentarios }}</p>
+                            {% endif %}
+                            {% if entrega.avaliacoes %}
+                            <div class="mt-2">
+                                {% for avaliacao in entrega.avaliacoes %}
+                                <div class="card bg-light mb-2">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Avaliação: {{ avaliacao.nota }}</h6>
+                                        <p class="card-text">{{ avaliacao.comentarios }}</p>
+                                        <small class="text-muted">Avaliado em {{ avaliacao.data_avaliacao.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">Nenhuma entrega registrada para esta equipe.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

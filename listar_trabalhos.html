@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        {% if current_user.role == 'professor' %}
+            <h2 class="mb-0">Gerenciar Trabalhos</h2>
+            <a href="{{ url_for('novo_trabalho') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Novo Trabalho
+            </a>
+        {% else %}
+            <h2 class="mb-0">Meus Trabalhos</h2>
+        {% endif %}
+    </div>
+
+    {% if current_user.role == 'aluno' %}
+    <!-- Visão do Aluno -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Trabalhos Atribuídos</h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Trabalho</th>
+                            <th>Equipe</th>
+                            <th>Status</th>
+                            <th>Nota</th>
+                            <th>Prazo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipe in current_user.equipes %}
+                            {% for trabalho in equipe.trabalhos %}
+                            <tr>
+                                <td>{{ trabalho.titulo }}</td>
+                                <td>{{ equipe.nome }}</td>
+                                <td>
+                                    {% set entrega = equipe.entregas|selectattr('trabalho_id', 'equalto', trabalho.id)|first %}
+                                    {% if entrega %}
+                                        <span class="badge bg-success">Entregue</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entrega and entrega.nota is not none %}
+                                        <span class="badge bg-info">{{ "%.1f"|format(entrega.nota) }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if trabalho.data_entrega %}
+                                        <span class="badge bg-{% if trabalho.data_entrega > agora %}success{% else %}danger{% endif %}">
+                                            {{ trabalho.data_entrega.strftime('%d/%m/%Y') }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Sem prazo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('entregas_aluno', trabalho_id=trabalho.id) }}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="fas fa-tasks me-1"></i> Detalhes
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    Nenhum trabalho atribuído
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if current_user.role == 'professor' %}
+    <!-- Visão do Professor -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Trabalhos Cadastrados</h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Título</th>
+                            <th>Descrição</th>
+                            <th>Data</th>
+                            <th>Prazo</th>
+                            <th>Entregas</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trabalho in trabalhos %}
+                        <tr>
+                            <td>{{ trabalho.obj.titulo }}</td>
+                            <td>{{ trabalho.obj.descricao|truncate(100) }}</td>
+                            <td>{{ trabalho.data_criacao }}</td>
+                            <td>
+                                {% if trabalho.obj.data_entrega %}
+                                <span class="badge bg-{{ trabalho.status }}">
+                                    {{ trabalho.data_formatada }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">Sem prazo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    {{ trabalho.obj.entregas|length }} entrega(s)
+                                </span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('gerenciar_entregas', trabalho_id=trabalho.obj.id) }}" 
+                                       class="btn btn-sm btn-info" title="Ver entregas">
+                                        <i class="fas fa-tasks"></i>
+                                    </a>
+                                    <a href="{{ url_for('novo_trabalho', trabalho_id=trabalho.obj.id) }}" 
+                                       class="btn btn-sm btn-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                Nenhum trabalho cadastrado
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atribuição de Trabalhos -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Atribuir Trabalho a Equipe</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('atribuir_trabalho') }}">
+                        <div class="mb-3">
+                            <label for="trabalho_id" class="form-label">Trabalho</label>
+                            <select class="form-select" id="trabalho_id" name="trabalho_id" required>
+                                <option value="">Selecione um trabalho</option>
+                                {% for trabalho in trabalhos %}
+                                <option value="{{ trabalho.obj.id }}">{{ trabalho.obj.titulo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="equipe_id" class="form-label">Equipe</label>
+                            <select class="form-select" id="equipe_id" name="equipe_id" required>
+                                <option value="">Selecione uma equipe</option>
+                                {% for equipe in equipes_sem_trabalho %}
+                                <option value="{{ equipe.id }}">{{ equipe.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-users me-1"></i> Atribuir à Equipe
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Atribuir Trabalho Individual</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('atribuir_trabalho_aluno') }}">
+                        <div class="mb-3">
+                            <label for="trabalho_id_ind" class="form-label">Trabalho</label>
+                            <select class="form-select" id="trabalho_id_ind" name="trabalho_id" required>
+                                <option value="">Selecione um trabalho</option>
+                                {% for trabalho in trabalhos %}
+                                <option value="{{ trabalho.obj.id }}">{{ trabalho.obj.titulo }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="aluno_id" class="form-label">Aluno</label>
+                            <select class="form-select" id="aluno_id" name="aluno_id" required>
+                                <option value="">Selecione um aluno</option>
+                                {% for aluno in alunos_sem_trabalho %}
+                                <option value="{{ aluno.id }}">{{ aluno.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-user me-1"></i> Atribuir Individualmente
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trabalhos Atribuídos -->
+    {% if trabalhos_atribuidos %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Trabalhos Atribuídos</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Trabalho</th>
+                            <th>Atribuído a</th>
+                            <th>Tipo</th>
+                            <th>Membros</th>
+                            <th>Entregas</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trabalho, equipe in trabalhos_atribuidos %}
+                        <tr>
+                            <td>{{ trabalho.titulo }}</td>
+                            <td>
+                                {% if equipe.membros|length == 1 %}
+                                    {{ equipe.membros[0].username }}
+                                {% else %}
+                                    {{ equipe.nome }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if equipe.membros|length == 1 %}
+                                    <span class="badge bg-info">Individual</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Equipe</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for membro in equipe.membros %}
+                                    <span class="badge bg-light text-dark">{{ membro.username }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if equipe.entregas|selectattr('trabalho_id', 'equalto', trabalho.id)|list|length > 0 else 'warning' }}">
+                                    {{ equipe.entregas|selectattr('trabalho_id', 'equalto', trabalho.id)|list|length }}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('remover_atribuicao', trabalho_id=trabalho.id, equipe_id=equipe.id) }}" 
+                                      class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-danger" 
+                                            onclick="return confirm('Tem certeza que deseja remover esta atribuição?')">
+                                        <i class="fas fa-trash-alt me-1"></i> Remover
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Ranking de Desempenho</h2>
+    <p>Classificação baseada na melhor velocidade de digitação (WPM) de cada usuário.</p>
+    
+    {% if ranking_data %}
+        <div class="table-container">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Usuário</th>
+                        <th>Velocidade (WPM)</th>
+                        <th>Precisão</th>
+                        <th>Dificuldade</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ranking_data %}
+                    <tr>
+                        <td>{{ loop.index }}º</td>
+                        <td>
+                            {% if loop.index == 1 %}
+                                🥇 
+                            {% elif loop.index == 2 %}
+                                🥈 
+                            {% elif loop.index == 3 %}
+                                🥉 
+                            {% endif %}
+                            {{ item.username }}
+                        </td>
+                        <td>{{ "%.1f"|format(item.wpm) }}</td>
+                        <td>{{ "%.1f"|format(item.accuracy) }}%</td>
+                        <td>
+                            <span class="dificuldade-badge dificuldade-{{ item.difficulty }}">
+                                {% if item.difficulty == 1 %}Iniciante{% endif %}
+                                {% if item.difficulty == 2 %}Intermediário{% endif %}
+                                {% if item.difficulty == 3 %}Avançado{% endif %}
+                                {% if item.difficulty == 4 %}Proficiente{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ item.date.strftime('%d/%m/%Y') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Nenhum desempenho registrado ainda. Seja o primeiro a jogar!</p>
+    {% endif %}
+{% endblock %}

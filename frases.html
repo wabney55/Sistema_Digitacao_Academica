@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Gerenciar Frases para Digitação</h2>
+    
+    <div class="card" style="margin-bottom: 2rem;">
+        <h3>Adicionar Nova Frase</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label for="texto">Texto da Frase</label>
+                <textarea id="texto" name="texto" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="nivel">Nível de Dificuldade</label>
+                <select id="nivel" name="nivel" class="form-control" required>
+                    <option value="1">1 - Iniciante</option>
+                    <option value="2">2 - Intermediário</option>
+                    <option value="3">3 - Avançado</option>
+                    <option value="4">4 - Proficiente</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn">Adicionar Frase</button>
+        </form>
+    </div>
+    
+    <h3>Frases Cadastradas</h3>
+    
+    {% if frases %}
+        <div class="table-container">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Frase</th>
+                        <th>Dificuldade</th>
+                        <th>Data</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for frase in frases %}
+                        <tr>
+                            <td>{{ frase.id }}</td>
+                            <td>{{ frase.texto }}</td>
+                            <td>
+                                <span class="dificuldade-badge dificuldade-{{ frase.nivel_dificuldade }}">
+                                    {{ frase.nivel_dificuldade }} - 
+                                    {% if frase.nivel_dificuldade == 1 %}Iniciante{% endif %}
+                                    {% if frase.nivel_dificuldade == 2 %}Intermediário{% endif %}
+                                    {% if frase.nivel_dificuldade == 3 %}Avançado{% endif %}
+                                    {% if frase.nivel_dificuldade == 4 %}Proficiente{% endif %}
+                                </span>
+                            </td>
+                            <td>{{ frase.data_criacao.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('remover_frase', id=frase.id) }}" 
+                                   class="btn btn-danger" 
+                                   onclick="return confirm('Tem certeza que deseja remover esta frase?')">Remover</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Nenhuma frase cadastrada ainda.</p>
+    {% endif %}
+{% endblock %}

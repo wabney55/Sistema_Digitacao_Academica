@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Gerenciar Equipes</h2>
+        <a href="{{ url_for('gerenciar_equipes') }}" class="btn btn-outline-primary">
+            <i class="fas fa-sync-alt me-1"></i> Atualizar
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lista de Alunos -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Lista de Alunos</h4>
+                    <span class="badge bg-light text-dark">{{ alunos|length }} alunos</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user, aluno in alunos %}
+                                    <tr>
+                                        <td>{{ user.username }}</td>
+                                        <td>
+                                            <span class="badge {{ 'bg-success' if aluno.ativo else 'bg-danger' }}">
+                                                {{ 'Ativo' if aluno.ativo else 'Inativo' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="acao" value="alternar_status">
+                                                <input type="hidden" name="aluno_id" value="{{ user.id }}">
+                                                <button type="submit" class="btn btn-sm {{ 'btn-danger' if aluno.ativo else 'btn-success' }}">
+                                                    <i class="fas {{ 'fa-user-slash' if aluno.ativo else 'fa-user-check' }} me-1"></i>
+                                                    {{ 'Desativar' if aluno.ativo else 'Ativar' }}
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sortear Equipes -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Sortear Equipes</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="acao" value="sortear">
+                        
+                        <div class="mb-3">
+                            <label for="num_equipes" class="form-label">Número de Equipes</label>
+                            <input type="number" id="num_equipes" name="num_equipes" class="form-control" min="1" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="num_membros" class="form-label">Membros por Equipe</label>
+                            <input type="number" id="num_membros" name="num_membros" class="form-control" min="1" required>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex">
+                            <button type="submit" class="btn btn-primary flex-grow-1">
+                                <i class="fas fa-random me-1"></i> Sortear Equipes
+                            </button>
+                            
+                            <button type="submit" formaction="{{ url_for('gerenciar_equipes') }}" 
+                                    name="acao" value="limpar_equipes" 
+                                    class="btn btn-outline-danger">
+                                <i class="fas fa-trash-alt me-1"></i> Limpar Tudo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Equipes Formadas -->
+{% if equipes %}
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0">Equipes Formadas</h4>
+        <span class="badge bg-light text-dark">{{ equipes|length }} equipes</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-4">
+            {% for equipe in equipes %}
+            <div class="col-md-6 col-lg-4 col-xl-3">
+                <div class="card h-100 border-start border-4 border-primary shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2 text-primary"></i>{{ equipe.nome }}
+                        </h5>
+                        <form method="POST" action="{{ url_for('excluir_equipe', equipe_id=equipe.id ) }}" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger" 
+                                    onclick="return confirm('Tem certeza que deseja excluir esta equipe?')">
+                                <i class="fas fa-trash-alt me-1"></i> Excluir
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        {% if equipe.trabalho %}
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2">Trabalho Atribuído</h6>
+                                <p class="mb-0">
+                                    <i class="fas fa-tasks me-2 text-primary"></i>
+                                    <strong>{{ equipe.trabalho.titulo }}</strong>
+                                </p>
+                            </div>
+                        {% endif %}
+                        
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-user-friends me-2"></i>Membros
+                        </h6>
+                        <ul class="list-group list-group-flush mb-3">
+                            {% for membro in equipe.membros %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 border-0">
+                                    <span>
+                                        <i class="fas fa-user me-2 text-muted"></i>
+                                        {{ membro.username }}
+                                    </span>
+                                    <span class="badge {{ 'bg-success' if membro.aluno_info.ativo else 'bg-secondary' }}">
+                                        {{ 'Ativo' if membro.aluno_info.ativo else 'Inativo' }}
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <small class="text-muted">
+                                <i class="far fa-calendar-alt me-1"></i> 
+                                {{ equipe.data_criacao.strftime('%d/%m/%Y') }}
+                            </small>
+                            <span class="badge bg-primary">
+                                {{ equipe.membros|length }} membro(s)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card shadow-sm mt-4">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Nenhuma equipe formada ainda</h5>
+        <p class="text-muted mb-0">Use o formulário acima para criar novas equipes</p>
+    </div>
+</div>
+{% endif %}
+</div>
+
+<!-- Adicione no final do template, antes do endblock -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

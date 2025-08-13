@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Atribuir Trabalho para Aluno</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>Trabalho: {{ trabalho.titulo }}</h4>
+            <p>{{ trabalho.descricao }}</p>
+        </div>
+    </div>
+    
+    <form method="POST">
+        <div class="mb-3">
+            <label for="aluno_id" class="form-label">Selecione o Aluno:</label>
+            <select class="form-select" id="aluno_id" name="aluno_id" required>
+                <option value="">-- Selecione um aluno --</option>
+                {% for aluno in alunos %}
+                    <option value="{{ aluno.id }}">{{ aluno.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Atribuir Trabalho</button>
+        <a href="{{ url_for('listar_trabalhos') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

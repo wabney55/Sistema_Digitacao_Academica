@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Gerenciar Notas dos Alunos</h2>
+    
+    <form method="POST" class="card" style="margin-bottom: 2rem;">
+        <div class="form-group">
+            <label for="aluno_id">Aluno</label>
+            <select id="aluno_id" name="aluno_id" class="form-control" required>
+                {% for aluno in alunos %}
+                    <option value="{{ aluno.id }}">{{ aluno.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="valor">Nota (0-10)</label>
+            <input type="number" id="valor" name="valor" class="form-control" min="0" max="10" step="0.1" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="descricao">Descrição</label>
+            <input type="text" id="descricao" name="descricao" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn">Adicionar Nota</button>
+    </form>
+    
+    <h3>Notas Recentes</h3>
+    <div class="table-container">
+        <table class="ranking-table">
+            <thead>
+                <tr>
+                    <th>Aluno</th>
+                    <th>Nota</th>
+                    <th>Descrição</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for nota in current_user.notas_dadas|sort(attribute='data', reverse=True) %}
+                    <tr>
+                        <td>{{ nota.aluno.username }}</td>
+                        <td>{{ "%.1f"|format(nota.valor) }}</td>
+                        <td>{{ nota.descricao }}</td>
+                        <td>{{ nota.data.strftime('%d/%m/%Y') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

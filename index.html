@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>Bem-vindo, {{ current_user.username }}!</h2>
+    
+    <div class="welcome-message">
+        {% if current_user.role == 'professor' %}
+            <p>Você está logado como <strong>Professor</strong>. Aqui você pode:</p>
+            <ul>
+                <li>Enviar arquivos para seus alunos</li>
+                <li>Cadastrar novos usuários</li>
+                <li>Acompanhar o desempenho da turma</li>
+            </ul>
+        {% else %}
+            <p>Você está logado como <strong>Aluno</strong>. Aqui você pode:</p>
+            <ul>
+                <li>Praticar sua digitação com nosso jogo</li>
+                <li>Acessar arquivos compartilhados pelo professor</li>
+                <li>Acompanhar seu progresso</li>
+            </ul>
+        {% endif %}
+    </div>
+    
+    <div class="quick-actions">
+        {% if current_user.role == 'professor' %}
+            <a href="{{ url_for('upload_file') }}" class="btn">Enviar Arquivos</a>
+            <a href="{{ url_for('cadastro') }}" class="btn">Cadastrar Usuário</a>
+            <a href="{{ url_for('ranking') }}" class="btn">Ver Ranking</a>
+        {% else %}
+            <a href="{{ url_for('jogo') }}" class="btn">Começar a Praticar</a>
+            <a href="{{ url_for('arquivos') }}" class="btn">Arquivos Compartilhados</a>
+            <a href="{{ url_for('perfil') }}" class="btn">Meu Desempenho</a>
+        {% endif %}
+    </div>
+{% endblock %}
